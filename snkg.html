@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>ARIFIPROXY · HSALEX</title>
+
+    <style>
+        /* ===== RESET Y FUENTES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff00c8;
+            --neon-green: #00ff88;
+            --neon-gold: #ffd700;
+            --bg-deep: #0a0a12;
+            --panel-bg: rgba(12, 12, 25, 0.88);
+            --border-glow: rgba(0, 240, 255, 0.2);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--bg-deep);
+            color: #ddd;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ===== CANVAS DE PARTÍCULAS ===== */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ===== CONTENEDOR PRINCIPAL ===== */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        /* ===== PANEL ===== */
+        .proxy-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glow);
+            border-radius: 32px;
+            padding: 45px 35px 40px;
+            box-shadow: 0 0 60px rgba(0, 240, 255, 0.06), inset 0 0 80px rgba(0, 240, 255, 0.02);
+            position: relative;
+            overflow: hidden;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Línea de escaneo giratoria */
+        .proxy-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(0, 240, 255, 0.04), transparent, rgba(255, 0, 200, 0.04), transparent);
+            animation: scanRotate 14s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== BRAND ===== */
+        .panel-brand {
+            text-align: center;
+            margin-bottom: 28px;
+            position: relative;
+        }
+
+        .panel-brand h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: 5px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 60px rgba(0, 240, 255, 0.2);
+            position: relative;
+        }
+
+        .panel-brand .subbrand {
+            font-size: 0.75rem;
+            color: #667;
+            letter-spacing: 7px;
+            text-transform: uppercase;
+            margin-top: 6px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 10px;
+        }
+
+        .panel-brand .glow-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 25px var(--neon-green);
+            margin-right: 8px;
+            animation: pulse-dot 1.8s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.4); }
+        }
+
+        /* ===== INPUT DE CLAVE (VACÍO PARA ESCRIBIR) ===== */
+        .key-input-wrapper {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(0, 240, 255, 0.12);
+            border-radius: 16px;
+            padding: 4px 20px;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            transition: 0.4s;
+            position: relative;
+        }
+
+        .key-input-wrapper:focus-within {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.08), inset 0 0 40px rgba(0, 240, 255, 0.02);
+        }
+
+        .key-input-wrapper .key-label {
+            font-size: 0.6rem;
+            color: #556;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            margin-right: 14px;
+            font-weight: 600;
+        }
+
+        .key-input-wrapper input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.4rem;
+            color: var(--neon-cyan);
+            padding: 16px 0;
+            letter-spacing: 3px;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+        }
+
+        .key-input-wrapper input::placeholder {
+            color: #334;
+            font-size: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .key-input-wrapper .input-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 28px;
+            background: var(--neon-cyan);
+            margin-left: 4px;
+            animation: blink-caret 0.9s step-end infinite;
+        }
+
+        @keyframes blink-caret {
+            50% { opacity: 0; }
+        }
+
+        /* ===== IP AUTO-DETECT (iOS y cualquier dispositivo) ===== */
+        .ip-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 14px;
+            padding: 14px 20px;
+            margin-bottom: 22px;
+            border-left: 3px solid var(--neon-cyan);
+            transition: 0.3s;
+        }
+
+        .ip-row:hover {
+            border-left-color: var(--neon-pink);
+            background: rgba(0, 240, 255, 0.03);
+        }
+
+        .ip-row .ip-label {
+            font-size: 0.8rem;
+            color: #889;
+            letter-spacing: 1px;
+        }
+
+        .ip-row .ip-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ip-row .ip-value .dot-online {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--neon-green);
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        /* ===== OPCIONES ===== */
+        .options-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .options-row .remember {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #99a;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .options-row .remember:hover {
+            color: #fff;
+        }
+
+        .options-row .remember input[type="checkbox"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #445;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .options-row .remember input[type="checkbox"]:checked {
+            border-color: var(--neon-cyan);
+            background: var(--neon-cyan);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);
+        }
+
+        .options-row .remember input[type="checkbox"]:checked::after {
+            content: '✔';
+            position: absolute;
+            top: -2px;
+            left: 2px;
+            font-size: 16px;
+            color: #0a0a12;
+        }
+
+        .options-row .clear-key {
+            color: #667;
+            text-decoration: none;
+            border-bottom: 1px dashed #445;
+            transition: 0.3s;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .options-row .clear-key:hover {
+            color: var(--neon-pink);
+            border-color: var(--neon-pink);
+        }
+
+        /* ===== BOTÓN ENTER KEY ===== */
+        .btn-enter {
+            width: 100%;
+            padding: 18px 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: #fff;
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 60px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: 0.4s;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.06);
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+        }
+
+        .btn-enter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.12), transparent);
+            transition: 0.6s;
+        }
+
+        .btn-enter:hover::before {
+            left: 100%;
+        }
+
+        .btn-enter:hover {
+            background: var(--neon-cyan);
+            color: #0a0a12;
+            box-shadow: 0 0 80px rgba(0, 240, 255, 0.4), inset 0 0 40px rgba(255, 255, 255, 0.05);
+            transform: scale(1.02);
+            border-color: var(--neon-cyan);
+        }
+
+        .btn-enter:active {
+            transform: scale(0.95);
+        }
+
+        .btn-enter:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== ESTADO ===== */
+        .status-msg {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #556;
+            height: 26px;
+            transition: 0.4s;
+        }
+
+        .status-msg.success {
+            color: var(--neon-green);
+            text-shadow: 0 0 40px rgba(0, 255, 136, 0.25);
+        }
+
+        .status-msg.error {
+            color: #ff4466;
+            text-shadow: 0 0 40px rgba(255, 68, 102, 0.25);
+        }
+
+        .status-msg.loading {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 500px) {
+            .proxy-panel {
+                padding: 30px 18px;
+                border-radius: 24px;
+            }
+            .panel-brand h1 {
+                font-size: 2.2rem;
+                letter-spacing: 3px;
+            }
+            .key-input-wrapper input {
+                font-size: 1.1rem;
+                padding: 14px 0;
+            }
+            .key-input-wrapper .key-label {
+                font-size: 0.5rem;
+                margin-right: 8px;
+            }
+            .ip-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+                padding: 12px 16px;
+            }
+            .options-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .btn-enter {
+                font-size: 1rem;
+                padding: 16px 0;
+                letter-spacing: 3px;
+            }
+        }
+
+        /* ===== EFECTO DE EXPLOSIÓN DE NEÓN (cuando acierta) ===== */
+        .panel-flash {
+            animation: flashNeon 0.8s ease;
+        }
+
+        @keyframes flashNeon {
+            0% { box-shadow: 0 0 0 rgba(0, 255, 136, 0); }
+            50% { box-shadow: 0 0 120px rgba(0, 255, 136, 0.3), inset 0 0 120px rgba(0, 255, 136, 0.05); }
+            100% { box-shadow: 0 0 60px rgba(0, 240, 255, 0.06), inset 0 0 80px rgba(0, 240, 255, 0.02); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== FONDO DE PARTÍCULAS ===== -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- ===== CONTENEDOR PRINCIPAL ===== -->
+    <div class="main-container">
+
+        <div class="proxy-panel" id="proxyPanel">
+
+            <!-- BRAND -->
+            <div class="panel-brand">
+                <h1>ARIFIPROXY</h1>
+                <div class="subbrand">
+                    <span class="glow-dot"></span> SECURE · FAST · ANON
+                </div>
+            </div>
+
+            <!-- INPUT DE CLAVE (VACÍO) -->
+            <div class="key-input-wrapper">
+                <span class="key-label">🔑 KEY</span>
+                <input type="text" id="keyInput" placeholder="Escribe tu clave..." autocomplete="off" spellcheck="false" />
+                <span class="input-cursor"></span>
+            </div>
+
+            <!-- IP AUTO-DETECT -->
+            <div class="ip-row">
+                <span class="ip-label">🌐 Your IPv4 address</span>
+                <span class="ip-value" id="ipDisplay">
+                    <span class="dot-online"></span> <span id="ipText">Auto-detect</span>
+                </span>
+            </div>
+
+            <!-- OPCIONES -->
+            <div class="options-row">
+                <label class="remember">
+                    <input type="checkbox" id="rememberKey" checked />
+                    Remember my key
+                </label>
+                <span class="clear-key" id="clearKeyBtn">✕ Clear saved key</span>
+            </div>
+
+            <!-- BOTÓN -->
+            <button class="btn-enter" id="enterKeyBtn">⏎ Enter Key</button>
+
+            <!-- MENSAJE DE ESTADO -->
+            <div class="status-msg" id="statusMsg">⚡ Listo para conectar</div>
+
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+        // ============================================================
+        // 1. PARTÍCULAS (fondo)
+        // ============================================================
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        const NUM = 160;
+        const DIST = 170;
+
+        function resize() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.vx = (Math.random() - 0.5) * 0.7;
+                this.vy = (Math.random() - 0.5) * 0.7;
+                this.r = Math.random() * 2.4 + 1.2;
+                this.alpha = Math.random() * 0.6 + 0.25;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > w) this.vx *= -1;
+                if (this.y < 0 || this.y > h) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 240, 255, ${this.alpha})`;
+                ctx.shadowColor = '#00f0ff';
+                ctx.shadowBlur = 14;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        for (let i = 0; i < NUM; i++) particles.push(new Particle());
+
+        function drawLines() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < DIST) {
+                        const alpha = 1 - (dist / DIST);
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.2})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            particles.forEach(p => { p.update(); p.draw(); });
+            drawLines();
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // ============================================================
+        // 2. IP AUTO-DETECT (iOS y cualquier dispositivo)
+        // ============================================================
+        const ipText = document.getElementById('ipText');
+
+        async function fetchIP() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                ipText.textContent = data.ip;
+                ipText.style.color = '#00f0ff';
+            } catch {
+                ipText.textContent = '⚠️ No detectada';
+                ipText.style.color = '#ff4466';
+            }
+        }
+        fetchIP();
+
+        // ============================================================
+        // 3. LÓGICA DE CLAVE HSALEX
+        // ============================================================
+        const keyInput = document.getElementById('keyInput');
+        const enterBtn = document.getElementById('enterKeyBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        const proxyPanel = document.getElementById('proxyPanel');
+        const rememberCheck = document.getElementById('rememberKey');
+        const clearKeyBtn = document.getElementById('clearKeyBtn');
+
+        const VALID_KEY = 'HSALEX';
+
+        // Cargar clave guardada (si existe)
+        if (localStorage.getItem('arifi_key')) {
+            const saved = localStorage.getItem('arifi_key');
+            keyInput.value = saved;
+            statusMsg.textContent = '🔑 Clave cargada';
+            statusMsg.className = 'status-msg';
+        }
+
+        // Enfocar input automáticamente
+        keyInput.focus();
+
+        // ============================================================
+        // 4. BOTÓN ENTER KEY (valida HSALEX)
+        // ============================================================
+        enterBtn.addEventListener('click', () => {
+            const key = keyInput.value.trim();
+
+            if (!key) {
+                statusMsg.className = 'status-msg error';
+                statusMsg.textContent = '⛔ Escribe una clave primero';
+                keyInput.style.borderColor = '#ff4466';
+                setTimeout(() => {
+                    keyInput.style.borderColor = '';
+                }, 1500);
+                return;
+            }
+
+            if (key !== VALID_KEY) {
+                statusMsg.className = 'status-msg error';
+                statusMsg.textContent = '❌ Clave incorrecta · Intenta de nuevo';
+                keyInput.style.borderColor = '#ff4466';
+                keyInput.value = '';
+                keyInput.focus();
+                setTimeout(() => {
+                    keyInput.style.borderColor = '';
+                }, 1500);
+                return;
+            }
+
+            // ===== CLAVE CORRECTA (HSALEX) =====
+            statusMsg.className = 'status-msg loading';
+            statusMsg.textContent = '🔐 Autenticando';
+            enterBtn.disabled = true;
+
+            setTimeout(() => {
+                // Éxito brutal
+                statusMsg.className = 'status-msg success';
+                statusMsg.textContent = '✅ ACCESO CONCEDIDO · Bienvenido HSALEX 🚀';
+                enterBtn.disabled = false;
+
+                // Guardar si está marcado
+                if (rememberCheck.checked) {
+                    localStorage.setItem('arifi_key', key);
+                }
+
+                // Efecto de explosión de neón
+                proxyPanel.classList.add('panel-flash');
+                setTimeout(() => {
+                    proxyPanel.classList.remove('panel-flash');
+                }, 1000);
+
+                // Cambiar borde a verde
+                proxyPanel.style.borderColor = 'rgba(0, 255, 136, 0.4)';
+                setTimeout(() => {
+                    proxyPanel.style.borderColor = '';
+                }, 3000);
+
+                // Animación en el input
+                keyInput.style.color = '#00ff88';
+                keyInput.style.textShadow = '0 0 40px rgba(0, 255, 136, 0.3)';
+                setTimeout(() => {
+                    keyInput.style.color = '';
+                    keyInput.style.textShadow = '';
+                }, 2500);
+
+            }, 1600);
+        });
+
+        // ============================================================
+        // 5. ENTER EN EL INPUT
+        // ============================================================
+        keyInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                enterBtn.click();
+            }
+        });
+
+        // ============================================================
+        // 6. CLEAR SAVED KEY
+        // ============================================================
+        clearKeyBtn.addEventListener('click', () => {
+            localStorage.removeItem('arifi_key');
+            keyInput.value = '';
+            keyInput.focus();
+            statusMsg.className = 'status-msg';
+            statusMsg.textContent = '🗑️ Clave eliminada';
+            setTimeout(() => {
+                statusMsg.textContent = '⚡ Listo para conectar';
+            }, 1600);
+        });
+
+        // ============================================================
+        // 7. AUTO-FOCUS EN MÓVIL (iOS)
+        // ============================================================
+        // Pequeño truco para que el teclado aparezca en móviles
+        document.addEventListener('touchstart', () => {
+            if (keyInput.value === '') {
+                keyInput.focus();
+            }
+        });
+
+        console.log('🔥 ARIFIPROXY · Panel HSALEX cargado');
+        console.log('💡 Clave válida: HSALEX');
+    </script>
+</body>
+</html>
